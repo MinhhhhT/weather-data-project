@@ -18,6 +18,8 @@ services:
     container_name: airflow_container
     image: apache/airflow:3.1.0
     user: "1000"
+    group_add: 
+      - '1001'
     ports: 
       - 8000:8080
     env_file: 
@@ -27,13 +29,29 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./api-request:/opt/airflow/api-request
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - db
     networks: 
       - my-network
     command: >
       bash -c "airflow db migrate && airflow standalone"
+      
+  dbt: 
+    container_name: dbt_container
+    image: ghcr.io/dbt-labs/dbt-postgres:1.9.latest
+    volumes: 
+      - ./dbt/my_project:/usr/app
+      - ./dbt:/root/.dbt
+    working_dir: /usr/app
+    environment: 
+      DBT_PROFILES_DIR: "/root/.dbt"
+    depends_on: 
+      - db
+    networks: 
+      - my-network
+    command: run
 
 networks: 
   my-network:
-    driver: bridge
+    driver: bridge  
